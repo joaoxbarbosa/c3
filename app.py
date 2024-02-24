@@ -15,7 +15,7 @@ import tempfile
 AVERAGE_CARBON_EMISSION_RATE_M = 0.19368
 # grams of co2 per meter
 
-CAR_MULTIPLIER = 1.1
+CAR_MULTIPLIER = 1
 
 
 def calculate_carbon_emissions(VIDEO_LENGTH_S, SPEED_LIMIT_KMS):
@@ -34,7 +34,7 @@ model = YOLO('yolov8n.pt')
 
 title = st.title('C³ - Car Carbon Counter')
 
-st.write('Welcome to C³ - the Car Carbon Counter! This AI-based app, made by João Barbosa, Martim Balthazar, Rafa Leme, and Noah Moesgen for the ISC Wildcode Hackathon, is designed to help engineers, planners, and policymakers understand the carbon emissions of cars on the road. Simply upload a video and we will do the rest!')
+st.write('Welcome to C³ - the Car Carbon Counter! This AI-based app, made by João Barbosa, Martim Balthazar, Rafa Leme, and Noah Moesgen for the ISC Wildcode Hackathon, is designed to help engineers, planners, and policymakers understand the carbon emissions of cars on the road. Simply upload a video and we will do the rest! Images are treated as 30 second long videos.')
 
 def frame_splitter(video_cap):
     # get first frame of video
@@ -77,9 +77,9 @@ with st.sidebar:
     selected = st.selectbox('Footage', ['Video 1', 'Video 2', 'Video 3'])
 
     with st.expander('View Sample Footage'):
-        st.image('1.jpg', caption="Video 1", use_column_width=True)
-        st.image('2.jpg', caption="Video 2", use_column_width=True)
-        st.image('3.jpg', caption="Video 3", use_column_width=True)
+        st.image('1.jpg', caption="Video 1 (30s)", use_column_width=True)
+        st.image('2.jpg', caption="Video 2 (30s)", use_column_width=True)
+        st.image('3.jpg', caption="Video 3 (30s)", use_column_width=True)
 
         def predict_sample():
             with st.expander('Results - Sample Footage'):
@@ -98,7 +98,6 @@ with st.sidebar:
                 CAR_COUNT = 0
 
                 for box in results.boxes:
-                    print(box.cls, box.conf)
                     if box.cls in match_types:
                         CAR_COUNT += 1
                 
@@ -113,7 +112,9 @@ with st.sidebar:
                 fps = video_cap.get(cv2.CAP_PROP_FPS)
                 totalNoFrames = video_cap.get(cv2.CAP_PROP_FRAME_COUNT)
                                     
-                VIDEO_LENGTH = totalNoFrames / fps
+                VIDEO_LENGTH = 30
+
+                print(VIDEO_LENGTH)
 
                 CARBON_EMISSIONS_G_PER_M = calculate_carbon_emissions(VIDEO_LENGTH, speed_limit)
 
@@ -121,7 +122,7 @@ with st.sidebar:
 
                 CARBON_EMISSIONS_FINAL = CARBON_EMISSIONS_G_PER_M * CAR_COUNT * CAR_MULTIPLIER
 
-                st.text(f"Carbon Emissions Detected: {round(CARBON_EMISSIONS_FINAL, 2)} grams of CO2 per kilometer of road travelled")
+                st.text(f"Carbon Emissions Detected: {format_grams(round(CARBON_EMISSIONS_FINAL, 2))} of CO2 per kilometer of road travelled")
 
     st.button('Submit', on_click=predict_sample)
 
@@ -130,18 +131,24 @@ with st.sidebar:
 # 2 col wide form like so 3 in total
     # make 3 selectable options for the user to choose from of images
 
+def format_grams(grams):
+    if grams < 1000:
+        return f"{round(grams, 2)} grams"
+    else:
+        return f"{round(grams / 1000, 2)} kilograms"
+
 with st.form("my_form"):
     speed_limit = st.number_input('Insert the Speed Limit (km/h)', step=5, value=40)
     #video_bool = st.toggle('Video Mode', value=False)
 
-    file_uploader = st.file_uploader('Upload Footage Here', accept_multiple_files=False, type=['mp4', 'avi', 'mov'])
+    file_uploader = st.file_uploader('Upload Footage Here', accept_multiple_files=False, type=['mp4', 'avi', 'mov', 'flv', 'wmv', 'mkv', 'webm', 'png', 'jpg', 'jpeg'])
 
     # Every form must have a submit button.
     submitted = st.form_submit_button("Submit")
 
     if submitted:
         if file_uploader is None:
-            st.error('Please upload a video file')
+            st.error('Please upload a file')
             st.stop()
 
         # https://blog.jcharistech.com/2021/01/21/how-to-save-uploaded-files-to-directory-in-streamlit-apps/
@@ -156,14 +163,32 @@ with st.form("my_form"):
 
             fps = video_cap.get(cv2.CAP_PROP_FPS)
             totalNoFrames = video_cap.get(cv2.CAP_PROP_FRAME_COUNT)
+
+            # if photo, make the video 1 second
+            print(file_uploader.type)
+            if file_uploader.type in ['image/png', 'image/jpg', 'image/jpeg']:
+                VIDEO_LENGTH = 30
+            else:
+                st.text("FILE IS A VIDEO")
+                VIDEO_LENGTH = totalNoFrames / fps
         
             # OpenCV VideoCapture using the uploaded file name
             #video_file = cv2.VideoCapture(f'{file_uploader.name}.{file_uploader.type}')
 
             # https://stackoverflow.com/questions/49048111/how-to-get-the-duration-of-video-using-opencv
+            #VIDEO_LENGTH = totalNoFrames / fps
 
             # get frame
-            frame_splitter(video_cap)
+            if file_uploader.type not in ['image/png', 'image/jpg', 'image/jpeg']:
+                frame_splitter(video_cap)
+            else:
+                # get 
+                #cv2.imwrite('temp.jpg', file_uploaded.name)
+                # create file for image
+                #with open('temp.jpg', 'wb') as f:
+                #    f.write(file_uploaded.read())
+                cv2.imwrite('temp.jpg', cv2.imread(file_uploaded.name))
+                
 
             image_path = 'temp.jpg'
 
@@ -181,7 +206,6 @@ with st.form("my_form"):
             CAR_COUNT = 0
 
             for box in results.boxes:
-                print(box.cls, box.conf)
                 if box.cls in match_types:
                     CAR_COUNT += 1
             
@@ -190,8 +214,6 @@ with st.form("my_form"):
 # Convert the color of the image from BGR to RGB for correct color representation in matplotlib
             sample_image = cv2.cvtColor(sample_image, cv2.COLOR_BGR2RGB)
             st.image(sample_image)
-                                
-            VIDEO_LENGTH = totalNoFrames / fps
 
             CARBON_EMISSIONS_G_PER_M = calculate_carbon_emissions(VIDEO_LENGTH, speed_limit)
 
@@ -199,5 +221,5 @@ with st.form("my_form"):
 
             CARBON_EMISSIONS_FINAL = CARBON_EMISSIONS_G_PER_M * CAR_COUNT * CAR_MULTIPLIER
 
-            st.text(f"Carbon Emissions Detected: {round(CARBON_EMISSIONS_FINAL, 2)} grams of CO2 per kilometer of road travelled")
+            st.text(f"Carbon Emissions Detected: {format_grams(round(CARBON_EMISSIONS_FINAL, 2))} of CO₂ per kilometer of road travelled")
 
