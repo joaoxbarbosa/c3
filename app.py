@@ -1,14 +1,11 @@
 import streamlit as st
 
-# Disable warnings in the notebook to maintain clean output cells
 import warnings
 warnings.filterwarnings('ignore')
 
 import cv2
 from ultralytics import YOLO
 import tempfile
-
-#col1, col2 = st.columns(2)
 
 # 1470 cars per 3 busses
 
@@ -44,14 +41,12 @@ def frame_splitter(video_cap):
     cv2.imwrite('temp.jpg', frame)
 
 def predict():
-    # Path to the image file
     image_path = 'temp.jpg'
 
     results = model([
         "temp.jpg"
     ])
 
-    # Perform inference on the provided image(s)
     results = model.predict(source=image_path,
                             imgsz=640,  # Resize image to 640x640 (the size pf images the model was trained on)
                             conf=0.1,
@@ -63,10 +58,6 @@ selected = None
 
 with st.sidebar:
     # selectable
-
-    # make the images actually clickable
-    # 3 images
-    # 1.jpg, 2, 3
 
     #st.radio('Footage', ['1', '2', '3'])
 
@@ -103,7 +94,7 @@ with st.sidebar:
                 
                 sample_image = results.plot(line_width=2)
 
-        # Convert the color of the image from BGR to RGB for correct color representation in matplotlib
+                # from cv2 docs
                 sample_image = cv2.cvtColor(sample_image, cv2.COLOR_BGR2RGB)
                 st.image(sample_image)
 
@@ -125,11 +116,6 @@ with st.sidebar:
                 st.text(f"Carbon Emissions Detected: {format_grams(round(CARBON_EMISSIONS_FINAL, 2))} of CO2 per kilometer of road travelled")
 
     st.button('Submit', on_click=predict_sample)
-
-
-
-# 2 col wide form like so 3 in total
-    # make 3 selectable options for the user to choose from of images
 
 def format_grams(grams):
     if grams < 1000:
@@ -182,7 +168,6 @@ with st.form("my_form"):
             if file_uploader.type not in ['image/png', 'image/jpg', 'image/jpeg']:
                 frame_splitter(video_cap)
             else:
-                # get 
                 #cv2.imwrite('temp.jpg', file_uploaded.name)
                 # create file for image
                 #with open('temp.jpg', 'wb') as f:
@@ -211,7 +196,6 @@ with st.form("my_form"):
             
             sample_image = results.plot(line_width=2)
 
-# Convert the color of the image from BGR to RGB for correct color representation in matplotlib
             sample_image = cv2.cvtColor(sample_image, cv2.COLOR_BGR2RGB)
             st.image(sample_image)
 
